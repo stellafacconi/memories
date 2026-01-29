@@ -4,9 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Memory</title>
-  <link rel="icon" href="100ppi\mini.png" type="image/png">
 
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono&display=swap" rel="stylesheet">
+
   <style>
     body {
       font-family: 'IBM Plex Mono', monospace;
@@ -20,15 +20,13 @@
       min-height: 100vh;
       margin: 0;
       text-align: center;
-      overflow-y: hidden;
-      overflow-x: hidden;
+      overflow: hidden;
     }
 
     .intro {
       font-size: 1.1rem;
-      font-weight:500;
+      font-weight: 500;
       margin-bottom: 4rem;
-      color: #000000;
     }
 
     form {
@@ -46,82 +44,72 @@
       border: none;
       border-radius: 4px;
       background-color: #f9f9f9;
-          resize: none;
+      resize: none;
     }
-    /* Altezza solo per il textarea */
-    form textarea {
+
+    textarea {
       height: 9rem;
     }
 
     button {
       margin-top: 1rem;
       padding: 1rem;
-      background-color: transparent;
-      color: #000000;
+      background: transparent;
       border: none;
       font-family: inherit;
       font-size: 1rem;
-      font-weight: normal;
       cursor: pointer;
-      transition: color 0.3s ease, transform 0.2s cubic-bezier(.4,0,.2,1), font-weight 0.2s;
+      transition: opacity .4s ease;
     }
 
-    button:hover {
-      color: #333;
-      font-weight: bold;
+    button.fade-out {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    #thanksMessage {
+      display: none;
+      padding: 3rem;
+      font-size: 1.1rem;
+      opacity: 0;
+      transition: opacity .8s ease;
+      position: relative;
+      z-index: 10;
+    }
+
+    #thanksMessage.visible {
+      opacity: 1;
     }
 
     #memoriesContainer {
-      display: none;
       position: fixed;
-      top: 0; left: 0;
-      width: 100vw;
-      height: 100vh;
+      inset: 0;
       pointer-events: none;
-      z-index: 20;
+      z-index: 1;
     }
 
     .memory {
       position: absolute;
       max-width: 250px;
       font-size: 0.9rem;
-      color: #000000;
       opacity: 0;
       transition: opacity 2s ease;
       padding: 0.5em 1em;
       pointer-events: auto;
+      will-change: transform;
     }
 
-    .visible {
-      opacity: 1 !important;
-    }
-
-    .fade-out {
-      opacity: 0 !important;
-      transition: opacity 0.8s cubic-bezier(.4,0,.2,1);
-    }
-    ::selection {
-  background-color: black;  /* Cambia il colore di sfondo */
-  color: white;             /* Cambia il colore del testo */
-}
-
-    #thanksMessage {
-      padding: 3rem;
-      display: none;
-      margin-bottom: 2rem;
-      color: #000000;
-      font-size: 1.1rem;
-      opacity: 0;
-      transition: opacity 0.8s cubic-bezier(.4,0,.2,1);
-      pointer-events: none;
-      position: relative;
-      z-index: 20;
-    }
-    #thanksMessage.visible {
+    .memory.visible {
       opacity: 1;
+    }
+
+    ::selection {
+      background: black;
+      color: white;
     }
   </style>
 </head>
+
 <body>
 
   <div class="intro">
@@ -140,169 +128,149 @@
 
   <div id="memoriesContainer"></div>
 
-  <script>
-    const form = document.getElementById('memoryForm');
-    const memoriesContainer = document.getElementById('memoriesContainer');
-    const thanksMessage = document.getElementById('thanksMessage');
-    const intro = document.querySelector('.intro');
+<script>
+/* ---------------------------------------------------
+   FORM SUBMIT
+--------------------------------------------------- */
+const form = document.getElementById("memoryForm");
+const memoriesContainer = document.getElementById("memoriesContainer");
+const thanksMessage = document.getElementById("thanksMessage");
+const intro = document.querySelector(".intro");
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  form.querySelector("button").classList.add("fade-out");
 
-      // Dissolvi il bottone al click
-      const button = form.querySelector('button[type="submit"]');
-      button.classList.add('fade-out');
+  const data = new URLSearchParams(new FormData(form));
 
-      const formData = new FormData(form);
-      const data = new URLSearchParams(formData);
+  await fetch("https://script.google.com/macros/s/AKfycbwVLWO1BbqEyLgsSyNEjnYJU3q74i0JffRPbo4RGFb5uUx3ue3auLq0RRUA2eIhkKGYyg/exec", {
+    method: "POST",
+    body: data
+  });
 
-      try {
-        await fetch("https://script.google.com/macros/s/AKfycbwVLWO1BbqEyLgsSyNEjnYJU3q74i0JffRPbo4RGFb5uUx3ue3auLq0RRUA2eIhkKGYyg/exec", {
-          method: "POST",
-          body: data
-        });
+  form.style.display = "none";
+  intro.style.display = "none";
+  thanksMessage.style.display = "block";
+  setTimeout(() => thanksMessage.classList.add("visible"), 20);
 
-        form.classList.add('fade-out');
-        intro.classList.add('fade-out');
+  setTimeout(loadMemories, 2000);
+});
 
-        setTimeout(() => {
-          form.style.display = "none";
-          intro.style.display = "none";
-          thanksMessage.style.display = "block";
-          // Dissolvenza in entrata
-          setTimeout(() => {
-            thanksMessage.classList.add('visible');
-          }, 10);
-        }, 300); // ridotto da 800ms a 300ms
+/* ---------------------------------------------------
+   LOAD MEMORIES
+--------------------------------------------------- */
+async function loadMemories() {
+  const res = await fetch("https://script.google.com/macros/s/AKfycbwVLWO1BbqEyLgsSyNEjnYJU3q74i0JffRPbo4RGFb5uUx3ue3auLq0RRUA2eIhkKGYyg/exec");
+  const memories = await res.json();
 
-        setTimeout(() => {
-          loadMemories();
-        }, 2000);
+  memoriesContainer.innerHTML = "";
+  const used = [];
+  const elements = [];
 
-      } catch (error) {
-        console.error("Submission error:", error);
-        alert("Something went wrong.");
+  memories.forEach(item => {
+    const el = document.createElement("div");
+    el.className = "memory";
+    el.innerHTML = `${item.message}<br><em>— ${item.name || "Anonymous"}</em>`;
+
+    let x, y, tries = 0;
+    do {
+      x = Math.random() * 80 + 5;
+      y = Math.random() * 80 + 5;
+      el.style.left = x + "vw";
+      el.style.top = y + "vh";
+      memoriesContainer.appendChild(el);
+      var r = el.getBoundingClientRect();
+      memoriesContainer.removeChild(el);
+      tries++;
+    } while (used.some(u => !(r.right < u.left || r.left > u.right || r.bottom < u.top || r.top > u.bottom)) && tries < 40);
+
+    used.push(r);
+    el.style.left = x + "vw";
+    el.style.top = y + "vh";
+    elements.push(el);
+  });
+
+  thanksMessage.classList.remove("visible");
+  setTimeout(() => thanksMessage.style.display = "none", 800);
+
+  elements.forEach((el, i) => {
+    memoriesContainer.appendChild(el);
+    setTimeout(() => el.classList.add("visible"), i * 200);
+  });
+
+  setTimeout(initMagnetism, 1000);
+}
+
+/* ---------------------------------------------------
+   MAGNETIC LOGIC
+--------------------------------------------------- */
+let items = [];
+let mouse = { x: 0, y: 0 };
+
+window.addEventListener("mousemove", e => {
+  mouse.x = e.clientX;
+  mouse.y = e.clientY;
+});
+
+function initMagnetism() {
+  items = Array.from(document.querySelectorAll(".memory")).map(el => {
+    const r = el.getBoundingClientRect();
+    return {
+      el,
+      x: r.left,
+      y: r.top,
+      vx: 0,
+      vy: 0,
+      ox: r.left,
+      oy: r.top
+    };
+  });
+  requestAnimationFrame(update);
+}
+
+function update() {
+  const R = 140;
+  const M = 180;
+  const SPRING = 0.002;
+  const DAMP = 0.88;
+
+  items.forEach(a => {
+    a.vx += (a.ox - a.x) * SPRING;
+    a.vy += (a.oy - a.y) * SPRING;
+
+    items.forEach(b => {
+      if (a === b) return;
+      const dx = a.x - b.x;
+      const dy = a.y - b.y;
+      const d = Math.hypot(dx, dy);
+      if (d < R && d > 0) {
+        const f = (R - d) / R;
+        a.vx += (dx / d) * f * 0.6;
+        a.vy += (dy / d) * f * 0.6;
       }
     });
 
-    async function loadMemories() {
-      try {
-        const response = await fetch("https://script.google.com/macros/s/AKfycbwVLWO1BbqEyLgsSyNEjnYJU3q74i0JffRPbo4RGFb5uUx3ue3auLq0RRUA2eIhkKGYyg/exec");
-        const memories = await response.json();
-
-        memoriesContainer.innerHTML = "";
-        memoriesContainer.style.display = "block";
-        const usedPositions = [];
-
-        // Calcola la posizione e dimensione del div thanksMessage per evitare sovrapposizioni (responsive/mobile)
-        const thanksRect = thanksMessage.getBoundingClientRect();
-        const vw = window.innerWidth;
-        const vh = window.innerHeight;
-        // percentuali rispetto a viewport
-        const thanksTop = (thanksRect.top / vh) * 100;
-        const thanksLeft = (thanksRect.left / vw) * 100;
-        const thanksBottom = (thanksRect.bottom / vh) * 100;
-        const thanksRight = (thanksRect.right / vw) * 100;
-        // dimensioni in percentuale
-        const thanksHeight = ((thanksRect.bottom - thanksRect.top) / vh) * 100;
-        const thanksWidth = ((thanksRect.right - thanksRect.left) / vw) * 100;
-
-        // Prepara gli elementi delle memories e le loro posizioni
-        const memoryElements = [];
-        memories.forEach((item) => {
-          const el = document.createElement("div");
-          el.className = "memory";
-          el.innerHTML = `<regular>${item.message}</regular><br><em style="font-weight:100">-${item.name || "Anonymous"}</em>`;
-
-          let region, top = 0, left = 0;
-          const margin = 5;
-          let tries = 0;
-          let overlap = false;
-
-          do {
-            // Scegli una delle 4 aree attorno al blocco centrale
-            const areas = ['top', 'bottom', 'left', 'right'];
-            region = areas[Math.floor(Math.random() * areas.length)];
-
-            if (region === 'top') {
-              top = Math.random() * (thanksTop - margin);
-              left = Math.random() * 90;
-            } else if (region === 'bottom') {
-              top = thanksBottom + Math.random() * (100 - thanksBottom - margin);
-              left = Math.random() * 90;
-            } else if (region === 'left') {
-              top = Math.random() * 90;
-              left = Math.random() * (thanksLeft - margin);
-            } else if (region === 'right') {
-              top = Math.random() * 90;
-              left = thanksRight + Math.random() * (100 - thanksRight - margin);
-            }
-
-            // Applica temporaneamente la posizione per calcolare il bounding box
-            el.style.top = `${top}vh`;
-            el.style.left = `${left}vw`;
-            el.style.visibility = "hidden";
-            memoriesContainer.appendChild(el);
-            const rect = el.getBoundingClientRect();
-            memoriesContainer.removeChild(el);
-
-            overlap = false;
-            for (const pos of usedPositions) {
-              if (
-                rect.left < pos.right &&
-                rect.right > pos.left &&
-                rect.top < pos.bottom &&
-                rect.bottom > pos.top
-              ) {
-                overlap = true;
-                break;
-              }
-            }
-
-            tries++;
-          } while (overlap && tries < 40);
-
-          // Applica la posizione definitiva
-          el.style.top = `${top}vh`;
-          el.style.left = `${left}vw`;
-          el.style.visibility = "visible";
-          // Non aggiungere ancora al DOM
-          memoryElements.push(el);
-
-          // Salva il bounding box per i prossimi controlli
-          memoriesContainer.appendChild(el);
-          const finalRect = el.getBoundingClientRect();
-          usedPositions.push({
-            left: finalRect.left,
-            right: finalRect.right,
-            top: finalRect.top,
-            bottom: finalRect.bottom
-          });
-          memoriesContainer.removeChild(el);
-        });
-
-        // Aggiungi le memories una alla volta con delay
-        function showMemoriesWithDelay(index = 0) {
-          if (index === 0) {
-            // Dissolvi il thanksMessage quando appare la prima memory
-            thanksMessage.classList.remove('visible');
-            setTimeout(() => {
-              thanksMessage.style.display = "none";
-            }, 800); // tempo della transizione CSS
-          }
-          if (index >= memoryElements.length) return;
-          memoriesContainer.appendChild(memoryElements[index]);
-          setTimeout(() => {
-            memoryElements[index].classList.add("visible");
-            showMemoriesWithDelay(index + 1);
-          }, index === 0 ? 0 : 200);
-        }
-        showMemoriesWithDelay();
-
-      } catch (error) {
-        console.error("Error loading memories:", error);
-      }
+    const mx = a.x - mouse.x;
+    const my = a.y - mouse.y;
+    const md = Math.hypot(mx, my);
+    if (md < M && md > 0) {
+      const f = (M - md) / M;
+      a.vx += (mx / md) * f * 1.2;
+      a.vy += (my / md) * f * 1.2;
     }
-  </script>
+
+    a.vx *= DAMP;
+    a.vy *= DAMP;
+    a.x += a.vx;
+    a.y += a.vy;
+
+    a.el.style.transform =
+      `translate(${a.x - a.ox}px, ${a.y - a.oy}px)`;
+  });
+
+  requestAnimationFrame(update);
+}
+</script>
+
 </body>
 </html>
