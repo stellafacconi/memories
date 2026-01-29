@@ -27,6 +27,11 @@
       font-size: 1.1rem;
       font-weight: 500;
       margin-bottom: 4rem;
+      transition: opacity .5s ease;
+    }
+
+    .intro.fade-out {
+      opacity: 0;
     }
 
     form {
@@ -35,6 +40,11 @@
       width: 100%;
       max-width: 500px;
       gap: 1rem;
+      transition: opacity .5s ease;
+    }
+
+    form.fade-out {
+      opacity: 0;
     }
 
     textarea, input[type="text"] {
@@ -60,7 +70,7 @@
       font-family: inherit;
       font-size: 1rem;
       cursor: pointer;
-      transition: opacity .4s ease;
+      transition: opacity .2s ease;
     }
 
     button.fade-out {
@@ -74,7 +84,10 @@
       font-size: 1.1rem;
       opacity: 0;
       transition: opacity .8s ease;
-      position: relative;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
       z-index: 10;
     }
 
@@ -94,7 +107,7 @@
       max-width: 250px;
       font-size: 0.9rem;
       opacity: 0;
-      transition: opacity 2s ease;
+      transition: opacity 1s ease;
       padding: 0.5em 1em;
       pointer-events: auto;
       will-change: transform;
@@ -140,7 +153,14 @@ const intro = document.querySelector(".intro");
 
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
-  form.querySelector("button").classList.add("fade-out");
+  form.classList.add("fade-out");
+  intro.classList.add("fade-out");
+
+  // Aspetta mezzo secondo prima di mostrare il messaggio thanks
+  setTimeout(() => {
+    thanksMessage.style.display = "block";
+    setTimeout(() => thanksMessage.classList.add("visible"), 20);
+  }, 1000);
 
   const data = new URLSearchParams(new FormData(form));
 
@@ -149,12 +169,12 @@ form.addEventListener("submit", async (e) => {
     body: data
   });
 
-  form.style.display = "none";
-  intro.style.display = "none";
-  thanksMessage.style.display = "block";
-  setTimeout(() => thanksMessage.classList.add("visible"), 20);
+  setTimeout(() => {
+    form.style.display = "none";
+    intro.style.display = "none";
+  }, 100);
 
-  setTimeout(loadMemories, 2000);
+  setTimeout(loadMemories, 10);
 });
 
 /* ---------------------------------------------------
@@ -196,10 +216,10 @@ async function loadMemories() {
 
   elements.forEach((el, i) => {
     memoriesContainer.appendChild(el);
-    setTimeout(() => el.classList.add("visible"), i * 200);
+    setTimeout(() => el.classList.add("visible"), i * 100);
   });
 
-  setTimeout(initMagnetism, 1000);
+  setTimeout(initMagnetism, 500);
 }
 
 /* ---------------------------------------------------
